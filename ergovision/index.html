@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ErgoVision Shield</title>
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Import Maps for Three.js -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+    
+    <!-- GSAP for Smooth Animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+</head>
+<body>
+
+    <!-- LOADING SCREEN -->
+    <div id="loading" class="glass-panel">
+        <h1>ErgoVision</h1>
+        <p>Loading 3D Experience...</p>
+    </div>
+
+    <!-- HEADER -->
+    <header class="glass-panel">
+        <div class="logo">
+            <h2>ErgoVision</h2>
+            <span>Hydrophobic & Anti-Fog Shield</span>
+        </div>
+        <nav>
+            <button id="homeBtn" class="active">HOME</button>
+            <button id="rainBtn">RAIN</button>
+            <button id="explodeBtn">EXPLODED</button>
+            <button id="compareBtn">COMPARE</button>
+        </nav>
+    </header>
+
+    <!-- THREE JS CANVAS -->
+    <div id="container"></div>
+
+    <!-- INFORMATION PANEL -->
+    <div id="infoPanel" class="glass-panel">
+        <h2 id="infoTitle">Product Overview</h2>
+        
+        <div id="infoContent">
+            <!-- Dynamic Content based on Mode -->
+        </div>
+    </div>
+
+    <!-- FLOATING LABELS CONTAINER -->
+    <div id="labelContainer"></div>
+
+    <!-- MAIN MODULE ENTRY -->
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
