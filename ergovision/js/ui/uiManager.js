@@ -9,7 +9,26 @@ export class UIManager {
         this.labels = [];
         this.activeLayers = null;
         this.isLabelsVisible = false;
+        this.explodePanel =
+document.getElementById("explodePanel");
+        this.labelInfo = {
 
+            outer: {
+                title: "OUTER VISOR",
+                desc: "Polycarbonate + Hydrophobic Coating"
+            },
+
+            airgap: {
+                title: "THERMAL AIR GAP",
+                desc: "1.5 mm Insulation Layer"
+            },
+
+            inner: {
+                title: "INNER VISOR",
+                desc: "Polycarbonate + Anti-Fog Coating"
+            }
+
+        };
         this.texts = {
             HOME: `
                 <div class="feature">
@@ -40,6 +59,21 @@ export class UIManager {
     }
 
     updatePanel(mode) {
+        if(mode==="EXPLODED"){
+
+gsap.to(this.explodePanel,{
+opacity:1,
+duration:.5
+});
+
+}else{
+
+gsap.to(this.explodePanel,{
+opacity:0,
+duration:.3
+});
+
+}
         // Fade out
         gsap.to(this.infoPanel, { opacity: 0, duration: 0.3, onComplete: () => {
             this.infoContent.innerHTML = this.texts[mode];
@@ -48,24 +82,61 @@ export class UIManager {
         }});
     }
 
-    showLabels(layers) {
-        this.activeLayers = layers;
-        this.isLabelsVisible = true;
-        this.labelContainer.innerHTML = '';
-        this.labels = [];
+    showLabels(layers){
 
-        Object.keys(layers).forEach((key) => {
-            const el = document.createElement('div');
-            el.className = 'label';
-            el.innerText = layers[key].name;
-            this.labelContainer.appendChild(el);
-            this.labels.push({ element: el, mesh: layers[key] });
-            
-            // Fade in label
-            setTimeout(() => { el.style.opacity = '1'; }, 100);
-        });
+        // this.activeLayers = layers;
+
+        // this.isLabelsVisible = true;
+
+        // this.labelContainer.innerHTML="";
+
+        // this.labels=[];
+
+        // const configs=[
+
+        //     {
+        //         mesh:layers.outer,
+        //         key:"outer"
+        //     },
+
+        //     {
+        //         mesh:layers.inner,
+        //         key:"inner"
+        //     }
+
+        // ];
+
+        // configs.forEach(item=>{
+
+        //     const card=document.createElement("div");
+
+        //     card.className="label";
+
+        //     card.innerHTML=`
+
+        //     <strong>${this.labelInfo[item.key].title}</strong>
+
+        //     <br>
+
+        //     <small>${this.labelInfo[item.key].desc}</small>
+
+        //     `;
+
+        //     this.labelContainer.appendChild(card);
+
+        //     this.labels.push({
+
+        //         mesh:item.mesh,
+
+        //         element:card,
+
+        //         key:item.key
+
+        //     });
+
+        // });
+
     }
-
     hideLabels() {
         this.isLabelsVisible = false;
         this.labels.forEach(l => {
@@ -79,29 +150,63 @@ export class UIManager {
     }
 
     updateLabelsPosition() {
-        if (!this.isLabelsVisible) return;
+    //     if (!this.isLabelsVisible) return;
         
-        const tempV = new THREE.Vector3();
+    //     const tempV = new THREE.Vector3();
         
-        this.labels.forEach(l => {
-            // Get position in world space. Offset a bit to the right and top
-            l.mesh.getWorldPosition(tempV);
-            tempV.x += 10; // offset right
-            tempV.y += 5;  // offset up
+    //     this.labels.forEach(l => {
+    //         if(this.airGapLabel){
+
+    //         const p1=new THREE.Vector3();
+
+    //         const p2=new THREE.Vector3();
+
+    //         this.activeLayers.outer.getWorldPosition(p1);
+
+    //         this.activeLayers.inner.getWorldPosition(p2);
+
+    //         p1.lerp(p2,0.5);
+
+    //         p1.project(this.camera);
+
+    //         this.airGapLabel.style.left=
+    //             ((p1.x*.5+.5)*window.innerWidth)+"px";
+
+    //         this.airGapLabel.style.top=
+    //             ((-p1.y*.5+.5)*window.innerHeight)+"px";
+
+    //     }
+    //         // Get position in world space. Offset a bit to the right and top
+    //         l.mesh.getWorldPosition(tempV);
+    //         // tempV.x += 10; // offset right
+    //         // tempV.y += 5;  // offset up
+    //         if(l.key==="outer"){
+
+    //             tempV.x+=5;
+    //             tempV.y+=2;
+
+    //         }
+
+    //         if(l.key==="inner"){
+
+    //             tempV.x-=5;
+    //             tempV.y-=2;
+
+    //         }
             
-            tempV.project(this.camera);
+    //         tempV.project(this.camera);
             
-            const x = (tempV.x *  .5 + .5) * window.innerWidth;
-            const y = (tempV.y * -.5 + .5) * window.innerHeight;
+    //         const x = (tempV.x *  .5 + .5) * window.innerWidth;
+    //         const y = (tempV.y * -.5 + .5) * window.innerHeight;
             
-            // Check if behind camera
-            if (tempV.z > 1) {
-                l.element.style.display = 'none';
-            } else {
-                l.element.style.display = 'block';
-                l.element.style.left = `${x}px`;
-                l.element.style.top = `${y}px`;
-            }
-        });
-    }
+    //         // Check if behind camera
+    //         if (tempV.z > 1) {
+    //             l.element.style.display = 'none';
+    //         } else {
+    //             l.element.style.display = 'block';
+    //             l.element.style.left = `${x}px`;
+    //             l.element.style.top = `${y}px`;
+    //         }
+    //     });
+     }
 }

@@ -5,146 +5,188 @@ export function createVisors(scene) {
     // MATERIALS
     // ----------------------------------------------------------------
     const materialProps = {
-        transmission: 1.0,
-        roughness: 0.02,
-        metalness: 0.1,
+        transmission: 0.55,
+        roughness: 0.06,
+        metalness: 0.0,
         transparent: true,
         side: THREE.DoubleSide,
-        clearcoat: 1.0,
-        clearcoatRoughness: 0.1,
-        ior: 1.58 // Polycarbonate index of refraction
+        clearcoat: 1,
+        clearcoatRoughness: 0.03,
+        ior: 1.53
     };
-
-    // ErgoVision Materials - highly transparent with slight premium blue-gray tint
-    const hydrophobicMat = new THREE.MeshPhysicalMaterial({ ...materialProps, color: 0xf4f9fb, opacity: 0.2, thickness: 0.01 });
-    const outerPCMat = new THREE.MeshPhysicalMaterial({ ...materialProps, color: 0xe8eef2, opacity: 0.1, thickness: 1.5 });
-    const innerPCMat = new THREE.MeshPhysicalMaterial({ ...materialProps, color: 0xf5f5f5, opacity: 0.1, thickness: 1.0 });
-    const antiFogMat = new THREE.MeshPhysicalMaterial({ ...materialProps, color: 0xf0fdf0, opacity: 0.1, thickness: 0.01 });
-    
-    // Conventional Material - slightly more distorted/tinted
+    const hydrophobicMat = new THREE.MeshPhysicalMaterial({ ...materialProps, color: 0x2DAFFF, opacity: 0.22, thickness: 0.30 });
+    const outerPCMat = new THREE.MeshPhysicalMaterial({ ...materialProps, color: 0x75CFFF, opacity: 0.72, transmission: 0.45, thickness: 1.5 });
+    const innerPCMat = new THREE.MeshPhysicalMaterial({ ...materialProps, color: 0xE8F4FF, opacity: 0.48, thickness: 1.2 });
+    const antiFogMat = new THREE.MeshPhysicalMaterial({ ...materialProps, color: 0x7EE6B0, opacity: 0.20, thickness: 0.03 });
     const conventionalMat = new THREE.MeshPhysicalMaterial({ ...materialProps, color: 0xf0f0f0, opacity: 0.4, thickness: 1.5, clearcoat: 0.8 });
     
-    // Silicone Seal Material
-    const sealMat = new THREE.MeshStandardMaterial({ color: 0x181818, roughness: 0.8, metalness: 0.2 });
+    const sealMat = new THREE.MeshPhysicalMaterial({
+        color: 0xf5f5f0,      
+        transmission: 0.25,   
+        opacity: 0.85,        
+        transparent: true,
+        roughness: 0.6,       
+        metalness: 0.0,
+        thickness: 0.4,       
+        clearcoat: 0.05
+    });
 
     // ----------------------------------------------------------------
-    // GEOMETRY (Realistic Spherical Visor Shape)
+    // GEOMETRY PARAMS (Helmet stays original, Visor is adjusted to fit)
     // ----------------------------------------------------------------
+    // Parameter yang akan dikirim ke helmet.js (dipertahankan agar helm tidak berubah)
     const radius = 9;
     const widthSegments = 64;
     const heightSegments = 32;
-    
-    // Wider horizontal wrap and slightly taller vertical profile for a real helmet look
-    const phiStart = Math.PI * 0.60;
-    const phiLength = Math.PI * 0.80;
-    const thetaStart = Math.PI * 0.32;
-    const thetaLength = Math.PI * 0.36;
+    const phiStart = Math.PI * 0.67;
+    const phiLength = Math.PI * 0.66;
+    const thetaStart = Math.PI * 0.27;
+    const thetaLength = Math.PI * 0.43;
 
-    const baseGeo = new THREE.SphereGeometry(radius, widthSegments, heightSegments, phiStart, phiLength, thetaStart, thetaLength);
-    baseGeo.computeVertexNormals();
+    // Parameter KHUSUS VISOR: Sedikit diperlebar agar masuk presisi ke dalam bukaan helm
+    const vRadius = 8.3; 
+    const vPhiStart = Math.PI * 0.65;
+    const vPhiLength = Math.PI * 0.65;
+    const vThetaStart = Math.PI * 0.33;
+    const vThetaLength = Math.PI * 0.47;
 
+    function deformVisor(geo) {
+
+    const pos = geo.attributes.position;
+
+    for (let i = 0; i < pos.count; i++) {
+
+        let x = pos.getX(i);
+        let y = pos.getY(i);
+        let z = pos.getZ(i);
+        if (y < -5.2) {
+
+    const t = Math.min((-5.2 - y) / 2.0, 1);
+
+    y += 1.6 * t;
+    z += 0.8 * t;
+
+}
+            // Ratakan bagian bawah visor
+if (y < -4.5) {
+
+    const t = Math.min((-3.5 - y) / 2.0, 1);
+
+    // Angkat sedikit
+    y += 1.8 * t;
+
+    // Kurangi lengkungan bawah
+    z += 0.8 * t;
+}
+        // Bentuk dasar
+        z *= 0.95;
+        x *= 1.01;
+
+        if (y > 3)
+            y *= 0.98;
+
+        // ==========================
+        // PERBAIKAN PROFIL SAMPING
+        // ==========================
+
+        // hanya bagian kiri-kanan visor
+        const side = Math.abs(x);
+
+        if (side > 5.8) {
+
+            const t = Math.min((side - 5.8) / 2.2, 1);
+
+            // sisi dibuat lebih tegak
+            x *= (1.0 - 0.10 * t);
+
+            // tarik ke belakang
+            z -= 0.1 * t;
+
+            // sedikit turun agar mengikuti helm
+            y -= 0.25 * t;
+        }
+
+        pos.setXYZ(i, x, y, z);
+
+    }
+
+    pos.needsUpdate = true;
+    geo.computeVertexNormals();
+
+    return geo;
+}
+ 
     // ----------------------------------------------------------------
-    // ERGOVISION SHIELD (Right/Center)
+    // ERGOVISION SHIELD
     // ----------------------------------------------------------------
     const ergoGroup = new THREE.Group();
     
-    // 1. Hydrophobic Coating (Outermost)
-    const hydroGeo = new THREE.SphereGeometry(radius + 0.05, widthSegments, heightSegments, phiStart, phiLength, thetaStart, thetaLength);
+    // Coating sangat rapat dengan Polycarbonate
+    const hydroGeo = deformVisor(new THREE.SphereGeometry(vRadius + 0.02, widthSegments, heightSegments, vPhiStart, vPhiLength, vThetaStart, vThetaLength));
     const hydroMesh = new THREE.Mesh(hydroGeo, hydrophobicMat);
     hydroMesh.name = "Hydrophobic Coating";
     
-    // 2. Outer Polycarbonate
+    const baseGeo = deformVisor(new THREE.SphereGeometry(vRadius, widthSegments, heightSegments, vPhiStart, vPhiLength, vThetaStart, vThetaLength));
     const outerMesh = new THREE.Mesh(baseGeo, outerPCMat);
     outerMesh.name = "Outer Polycarbonate";
     outerMesh.castShadow = true;
     
-    // 4. Inner Polycarbonate (0.4mm gap)
-    const innerRadius = radius - 0.4;
-    const innerGeo = new THREE.SphereGeometry(innerRadius, widthSegments, heightSegments, phiStart, phiLength, thetaStart, thetaLength);
+    // Thermal gap
+    const innerRadius = vRadius - 0.3;
+    const innerGeo = deformVisor(new THREE.SphereGeometry(innerRadius, widthSegments, heightSegments, vPhiStart, vPhiLength, vThetaStart, vThetaLength));
     const innerMesh = new THREE.Mesh(innerGeo, innerPCMat);
     innerMesh.name = "Inner Polycarbonate";
 
-    // 5. Anti-Fog Coating (Innermost)
-    const fogGeo = new THREE.SphereGeometry(innerRadius - 0.05, widthSegments, heightSegments, phiStart, phiLength, thetaStart, thetaLength);
+    const fogGeo = deformVisor(new THREE.SphereGeometry(innerRadius - 0.02, widthSegments, heightSegments, vPhiStart, vPhiLength, vThetaStart, vThetaLength));
     const fogMesh = new THREE.Mesh(fogGeo, antiFogMat);
     fogMesh.name = "Anti Fog Coating";
 
-    // 6. Silicone Edge Seal (Border between outer and inner)
-    // We create a CatmullRomCurve3 path along the exact edges of the visor geometry
     function getVisorEdgePoints(r, segments, zOffset) {
         const points = [];
-        // Top edge
-        for(let i = 0; i <= segments; i++) {
-            const phi = phiStart + (i / segments) * phiLength;
-            const theta = thetaStart;
-            points.push(new THREE.Vector3(-r * Math.cos(phi) * Math.sin(theta), r * Math.cos(theta), r * Math.sin(phi) * Math.sin(theta) + zOffset));
-        }
-        // Right edge
-        for(let i = 1; i <= segments; i++) {
-            const phi = phiStart + phiLength;
-            const theta = thetaStart + (i / segments) * thetaLength;
-            points.push(new THREE.Vector3(-r * Math.cos(phi) * Math.sin(theta), r * Math.cos(theta), r * Math.sin(phi) * Math.sin(theta) + zOffset));
-        }
-        // Bottom edge
-        for(let i = 1; i <= segments; i++) {
-            const phi = phiStart + phiLength - (i / segments) * phiLength;
-            const theta = thetaStart + thetaLength;
-            points.push(new THREE.Vector3(-r * Math.cos(phi) * Math.sin(theta), r * Math.cos(theta), r * Math.sin(phi) * Math.sin(theta) + zOffset));
-        }
-        // Left edge
-        for(let i = 1; i < segments; i++) { 
-            const phi = phiStart;
-            const theta = thetaStart + thetaLength - (i / segments) * thetaLength;
-            points.push(new THREE.Vector3(-r * Math.cos(phi) * Math.sin(theta), r * Math.cos(theta), r * Math.sin(phi) * Math.sin(theta) + zOffset));
-        }
-        return points;
+        for(let i = 0; i <= segments; i++) points.push(new THREE.Vector3(-r * Math.cos(vPhiStart + (i/segments)*vPhiLength) * Math.sin(vThetaStart), r * Math.cos(vThetaStart), r * Math.sin(vPhiStart + (i/segments)*vPhiLength) * Math.sin(vThetaStart) + zOffset));
+        for(let i = 1; i <= segments; i++) points.push(new THREE.Vector3(-r * Math.cos(vPhiStart + vPhiLength) * Math.sin(vThetaStart + (i/segments)*vThetaLength), r * Math.cos(vThetaStart + (i/segments)*vThetaLength), r * Math.sin(vPhiStart + vPhiLength) * Math.sin(vThetaStart + (i/segments)*vThetaLength) + zOffset));
+        for(let i = 1; i < segments; i++) points.push(new THREE.Vector3(-r * Math.cos(vPhiStart) * Math.sin(vThetaStart + vThetaLength - (i/segments)*vThetaLength), r * Math.cos(vThetaStart + vThetaLength - (i/segments)*vThetaLength), r * Math.sin(vPhiStart) * Math.sin(vThetaStart + vThetaLength - (i/segments)*vThetaLength) + zOffset));
+        
+        // Terapkan deformasi pada seal agar menempel erat di pinggir
+        return points.map(pt => {
+            let z = pt.z * 0.96;
+            let x = pt.x * 1.01;
+            let y = pt.y;
+            if (y > 3) y *= 0.98;
+            return new THREE.Vector3(x, y, z);
+        });
     }
 
-    const edgePoints = getVisorEdgePoints(radius - 0.2, 32, 0); // Position exactly between outer and inner
-    const sealPath = new THREE.CatmullRomCurve3(edgePoints, true);
-    // Seal thickness covers the 0.4 gap
-    const sealGeo = new THREE.TubeGeometry(sealPath, 128, 0.28, 8, true);
+    const edgePoints = getVisorEdgePoints(vRadius - 0.15, 32, 0); 
+    const sealPath = new THREE.CatmullRomCurve3(edgePoints, false);
+    const sealGeo = new THREE.TubeGeometry(sealPath, 128, 0.12, 8, false);
     const sealMesh = new THREE.Mesh(sealGeo, sealMat);
     sealMesh.name = "Silicone Edge Seal";
 
-    ergoGroup.add(hydroMesh, outerMesh, innerMesh, fogMesh, sealMesh);
-    
-    // Adjust ErgoGroup Default Position and tilt for premium presentation
-    ergoGroup.position.set(0, 0, 0);
-    ergoGroup.rotation.x = -0.15; // slight tilt
+    ergoGroup.add(hydroMesh, outerMesh, innerMesh, fogMesh);
+    ergoGroup.position.set(0.9, -0.5, 0);
+    ergoGroup.rotation.x = -0.15; 
 
     // ----------------------------------------------------------------
-    // CONVENTIONAL VISOR (Left for Compare Mode)
+    // CONVENTIONAL VISOR
     // ----------------------------------------------------------------
     const conventionalGroup = new THREE.Group();
-    
     const convMesh = new THREE.Mesh(baseGeo, conventionalMat);
     convMesh.name = "Conventional Visor";
     convMesh.castShadow = true;
     
     conventionalGroup.add(convMesh);
-    
-    // Initially hidden
-    conventionalGroup.visible = false;
+    conventionalGroup.visible = false; 
     conventionalGroup.position.set(-12, 0, 0);
     conventionalGroup.rotation.x = -0.15;
 
-    // Add to scene
     scene.add(ergoGroup);
     scene.add(conventionalGroup);
 
     return {
         ergo: ergoGroup,
         conventional: conventionalGroup,
-        layers: {
-            hydro: hydroMesh,
-            outer: outerMesh,
-            inner: innerMesh,
-            antiFog: fogMesh,
-            seal: sealMesh
-        },
-        params: {
-            radius, phiStart, phiLength, thetaStart, thetaLength
-        }
+        layers: { hydro: hydroMesh, outer: outerMesh, inner: innerMesh, antiFog: fogMesh, seal: sealMesh },
+        params: { radius, phiStart, phiLength, thetaStart, thetaLength, vRadius, vPhiStart, vPhiLength, vThetaStart, vThetaLength } // Export parameter original untuk helmet
     };
 }
